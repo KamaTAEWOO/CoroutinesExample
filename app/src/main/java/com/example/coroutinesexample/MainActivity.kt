@@ -11,10 +11,13 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.yield
 
 class MainActivity : AppCompatActivity() {
@@ -31,6 +34,54 @@ class MainActivity : AppCompatActivity() {
         coroutineScopeExample()
         suspendFunction()
         addSuspendFunction()
+        cancellation()
+        timeoutCancellation()
+    }
+
+    private fun timeoutCancellation() {
+        // 1번
+        CoroutineScope(Dispatchers.Main).launch {
+            val result = withTimeoutOrNull(1300L) {
+                repeat(1000) { i ->
+                    Log.d(TAG, "I'm sleeping $i ...")
+                    delay(500L)
+                }
+                "Done"
+            }
+            Log.d(TAG, "Result is $result")
+        }
+
+        // 2번
+        runBlocking {
+            val result = withTimeoutOrNull(1300L) {
+                repeat(1000) { i ->
+                    Log.d(TAG, "I'm sleeping $i ...")
+                    delay(500L)
+                }
+                "Done"
+            }
+            Log.d(TAG, "Result is $result")
+        }
+    }
+
+    private fun cancellation() {
+//        runBlocking {
+//            val job = launch {
+//                try {
+//                    repeat(1000) { i ->
+//                        Log.d(TAG, "I'm sleeping $i ...")
+//                        delay(500L)
+//                    }
+//                } finally {
+//                    Log.d(TAG, "main : I'm running finally!")
+//                }
+//            }
+//
+//            delay(1300L)
+//            Log.d(TAG, "main : I'm tired of waiting!")
+//            job.cancelAndJoin()
+//            Log.d(TAG, "main : Now I can quit.")
+//        }
     }
 
     // Hello World
@@ -139,12 +190,12 @@ class MainActivity : AppCompatActivity() {
 //                Log.d(TAG, "Result2: $result")
 //            }
 
-            launch {
-                test1()
-            }
-            launch {
-                test2()
-            }
+//            launch {
+//                test1()
+//            }
+//            launch {
+//                test2()
+//            }
         }
     }
 
