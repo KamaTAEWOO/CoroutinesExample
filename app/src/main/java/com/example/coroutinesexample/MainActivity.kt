@@ -6,12 +6,16 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 
 class MainActivity : AppCompatActivity() {
     private val TAG = MainActivity::class.java.simpleName
@@ -112,24 +116,64 @@ class MainActivity : AppCompatActivity() {
 
     // add
     private fun addSuspendFunction() {
+//        runBlocking {
+//            val job = GlobalScope.launch {
+//                Log.d(TAG, "Start")
+//                val result = add(4, 5)
+//                Log.d(TAG, "Result: $result")
+//            }
+//            job.join()
+//        }
+
         runBlocking {
-            val job = GlobalScope.launch {
-                Log.d(TAG, "Start")
-                val result = add(4, 5)
-                Log.d(TAG, "Result: $result")
+//            GlobalScope.launch {
+//                Log.d(TAG, "Start1")
+//                val result = add1(4, 5)
+//                Log.d(TAG, "Result1: $result")
+//            }
+//
+//            // Dispatchers는 선점인지 비선점인지 상관없음.
+//            CoroutineScope(Dispatchers.Main).launch {
+//                Log.d(TAG, "Start2")
+//                val result = add1(10, 5)
+//                Log.d(TAG, "Result2: $result")
+//            }
+
+            launch {
+                test1()
             }
-            job.join()
+            launch {
+                test2()
+            }
         }
     }
 
     // 1번
     private suspend fun add(data1: Int, data2: Int): Int {
+        Log.d(TAG, "add delay before")
         delay(1000L)
+        Log.d(TAG, "add delay after")
+        // yield() // 선점형 스케줄러로 만들어줌
+                // 즉 다른 코루틴에게 양보함.
         return 4 + 5
     }
 
     // 2번
     private fun add1(data1: Int, data2: Int): Int {
         return 4 + 5
+    }
+
+    // 2초마다 for문으로 1씩 증가
+    private suspend fun test1() {
+        for (i in 1..10) {
+            Log.d(TAG, "i: $i")
+            delay(2000L)
+        }
+    }
+
+    private suspend fun test2() {
+        Log.d(TAG, "add delay before")
+        delay(20000L)
+        Log.d(TAG, "add delay after")
     }
 }
