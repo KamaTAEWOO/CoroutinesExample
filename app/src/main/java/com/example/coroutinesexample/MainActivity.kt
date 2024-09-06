@@ -4,38 +4,137 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.coroutines.yield
 
 class MainActivity : AppCompatActivity() {
-    private val TAG = MainActivity::class.java.simpleName
+    private val TAG = "TestExample::"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        Thread.sleep(2000L)
+//        helloWorld()
+//        coroutineScopeExample()
+//        suspendFunction()
+//        addSuspendFunction()
+//        cancellation()
+//        timeoutCancellation()
+//        channerExample()
+//        producerConsumer()
+        panoutExample()
+    }
 
-        helloWorld()
-        coroutineScopeExample()
-        suspendFunction()
-        addSuspendFunction()
-        cancellation()
-        timeoutCancellation()
+    private fun panoutExample() {
+        runBlocking {
+            val producer: ReceiveChannel<Int> = produceNumbers()
+            repeat(5) { launchProcessor(it, producer) }
+            delay(950L)
+            producer.cancel()
+        }
+    }
+
+    fun CoroutineScope.produceNumbers() = produce<Int> {
+        var x = 1
+        while (true) {
+            send(x++)
+            delay(100L)
+        }
+    }
+
+    fun CoroutineScope.launchProcessor(id: Int, channel: ReceiveChannel<Int>) = launch {
+        for (msg in channel) {
+            Log.d(TAG, "Processor #$id received $msg")
+        }
+    }
+
+//    private fun producerConsumer() {
+//        runBlocking {
+//            val numbers = produceNumbers(5)
+//            val double = produceDouble(numbers)
+//            double.consumeEach {
+//                Log.d(TAG, it.toString())
+//            }
+//            Log.d(TAG, "Done!")
+//
+////            val squares = produceSquare(5)
+////            squares.consumeEach {
+////                Log.d(TAG, it.toString())
+////            }
+////            Log.d(TAG, "Done!")
+//        }
+//    }
+
+    fun CoroutineScope.produceNumbers(max: Int): ReceiveChannel<Int> = produce {
+        for (x in 1..max) {
+            send(x)
+        }
+    }
+
+    fun CoroutineScope.produceDouble(numbers: ReceiveChannel<Int>): ReceiveChannel<Int> = produce {
+        numbers.consumeEach { send(it * 2) }
+    }
+
+    private fun CoroutineScope.produceSquare(max: Int) = produce {
+        for (x in 1..max) {
+            send(x * x)
+        }
+    }
+
+    private fun channerExample() {
+        val channel = Channel<Int>()
+
+//        runBlocking {
+//            launch {
+//                for (x in 1..5) {
+//                    channel.send(x * x)
+//                }
+//            }
+//
+//            repeat(5) {
+//                Log.d(TAG, "1 - " + channel.receive().toString())
+//            }
+//            Log.d(TAG, "Done!")
+//
+//            channelReceive(channel)
+//        }
+
+        CoroutineScope(Dispatchers.Main).launch {
+            launch {
+                for (x in 1..5) {
+                    channel.send(x * x)
+                }
+            }
+
+            repeat(5) {
+                Log.d(TAG, "1 - " + channel.receive().toString())
+            }
+            Log.d(TAG, "Done!")
+        }
+
+        CoroutineScope(Dispatchers.Main).launch {
+            channelReceive(channel)
+        }
+    }
+
+    private fun channelReceive(channel: Channel<Int>) {
+        runBlocking {
+            repeat(5) {
+                Log.d(TAG, "2 - " +  channel.receive().toString())
+            }
+            Log.d(TAG, "Done!")
+        }
+
     }
 
     private fun timeoutCancellation() {
